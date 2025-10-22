@@ -1,5 +1,5 @@
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useAuth } from './AuthContext';
 
 interface CategoryProgress {
@@ -73,29 +73,7 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [categoryProgress, setCategoryProgress] = useState<Record<string, CategoryProgress>>(defaultCategoryProgress);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Load progress from localStorage
-  useEffect(() => {
-    if (user) {
-      loadProgress();
-    } else {
-      // Reset to defaults if no user
-      setUserStats(defaultUserStats);
-      setCategoryProgress(defaultCategoryProgress);
-    }
-  }, [user]);
-
-  // Auto-save progress every 30 seconds
-  useEffect(() => {
-    if (user) {
-      const interval = setInterval(() => {
-        saveProgress();
-      }, 30000);
-
-      return () => clearInterval(interval);
-    }
-  }, [user, userStats, categoryProgress]);
-
-  const loadProgress = () => {
+  const loadProgress = useCallback(() => {
     try {
       const savedStats = localStorage.getItem(`cogniquest_stats_${user?.id}`);
       const savedCategories = localStorage.getItem(`cogniquest_categories_${user?.id}`);
@@ -110,7 +88,29 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     } catch (error) {
       console.error('Error loading progress:', error);
     }
-  };
+  }, [user?.id]);
+
+  // Load progress from localStorage
+  useEffect(() => {
+    if (user) {
+      loadProgress();
+    } else {
+      // Reset to defaults if no user
+      setUserStats(defaultUserStats);
+      setCategoryProgress(defaultCategoryProgress);
+    }
+  }, [user, loadProgress]);
+
+  // Auto-save progress every 30 seconds
+  useEffect(() => {
+    if (user) {
+      const interval = setInterval(() => {
+        saveProgress();
+      }, 30000);
+
+      return () => clearInterval(interval);
+    }
+  }, [user]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const saveProgress = () => {
     if (!user) return;

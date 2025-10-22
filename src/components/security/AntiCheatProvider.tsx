@@ -84,7 +84,7 @@ const AntiCheatProvider: React.FC<AntiCheatProviderProps> = ({ children }) => {
     };
 
     // Check for DevTools
-    let devtools = { open: false };
+    const devtools = { open: false };
     const checkDevTools = () => {
       const threshold = 160;
       if (

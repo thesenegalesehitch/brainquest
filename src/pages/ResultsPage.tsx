@@ -20,16 +20,20 @@ import { categories } from '@/data/categories';
 import { useProgress } from '@/contexts/ProgressContext';
 import { useToast } from '@/hooks/use-toast';
 
+interface SessionResult {
+  isCorrect: boolean;
+  responseTime: number;
+  puzzle: {
+    difficulty: number;
+  };
+}
+
 interface LocationState {
   score: number;
   correctAnswers: number;
   totalQuestions: number;
   totalTime: number;
-  sessionResults: Array<{
-    isCorrect: boolean;
-    responseTime: number;
-    puzzle: any;
-  }>;
+  sessionResults: SessionResult[];
 }
 
 const ResultsPage = () => {

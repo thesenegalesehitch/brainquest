@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
@@ -52,37 +52,55 @@ const GamePage = () => {
     }
   }, [categoryId, level]);
 
-  // Timer logic
-  useEffect(() => {
-    if (isPaused || isAnswered || timeLeft <= 0) return;
+  const calculatePoints = useCallback((isCorrect: boolean, responseTime: number, difficulty: number, timeRemaining: number): number => {
+    if (!isCorrect) return 0;
 
-    const timer = setInterval(() => {
-      setTimeLeft(prev => {
-        if (prev <= 1) {
-          handleTimeUp();
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
+    const basePoints = difficulty * 10;
+    const speedBonus = Math.max(0, timeRemaining * 2);
+    const difficultyBonus = difficulty * 5;
 
-    return () => clearInterval(timer);
-  }, [timeLeft, isPaused, isAnswered]);
+    return Math.floor(basePoints + speedBonus + difficultyBonus);
+  }, []);
 
-  const handleTimeUp = () => {
-    if (!isAnswered) {
-      handleAnswer(false, puzzles[currentPuzzleIndex]?.timeLimit * 1000 || 60000);
+  const handleSessionComplete = useCallback(() => {
+    const finalScore = Math.floor((correctAnswers / puzzles.length) * 100);
+    const totalTime = Math.floor((Date.now() - gameStartTime) / 1000);
+
+    // Update progress
+    if (categoryId && level) {
+      updateProgress(categoryId, parseInt(level), finalScore, totalTime);
     }
-  };
 
-  const handleAnswer = (isCorrect: boolean, responseTime: number) => {
+    navigate(`/results/${categoryId}/${level}`, {
+      state: {
+        score: finalScore,
+        correctAnswers,
+        totalQuestions: puzzles.length,
+        totalTime,
+        sessionResults
+      }
+    });
+  }, [correctAnswers, puzzles.length, gameStartTime, categoryId, level, updateProgress, navigate, sessionResults]);
+
+  const handleNextPuzzle = useCallback(() => {
+    if (currentPuzzleIndex < puzzles.length - 1) {
+      setCurrentPuzzleIndex(prev => prev + 1);
+      setTimeLeft(puzzles[currentPuzzleIndex + 1]?.timeLimit || 60);
+      setIsAnswered(false);
+    } else {
+      // End of session
+      handleSessionComplete();
+    }
+  }, [currentPuzzleIndex, puzzles, handleSessionComplete]);
+
+  const handleAnswer = useCallback((isCorrect: boolean, responseTime: number) => {
     if (isAnswered) return;
 
     setIsAnswered(true);
-    
+
     const currentPuzzle = puzzles[currentPuzzleIndex];
     const points = calculatePoints(isCorrect, responseTime, currentPuzzle.difficulty, timeLeft);
-    
+
     setScore(prev => prev + points);
     if (isCorrect) {
       setCorrectAnswers(prev => prev + 1);
@@ -106,58 +124,40 @@ const GamePage = () => {
     setTimeout(() => {
       handleNextPuzzle();
     }, 2000);
-  };
+  }, [isAnswered, puzzles, currentPuzzleIndex, calculatePoints, timeLeft, toast, handleNextPuzzle]);
 
-  const calculatePoints = (isCorrect: boolean, responseTime: number, difficulty: number, timeRemaining: number): number => {
-    if (!isCorrect) return 0;
-    
-    const basePoints = difficulty * 10;
-    const speedBonus = Math.max(0, timeRemaining * 2);
-    const difficultyBonus = difficulty * 5;
-    
-    return Math.floor(basePoints + speedBonus + difficultyBonus);
-  };
-
-  const handleNextPuzzle = () => {
-    if (currentPuzzleIndex < puzzles.length - 1) {
-      setCurrentPuzzleIndex(prev => prev + 1);
-      setTimeLeft(puzzles[currentPuzzleIndex + 1]?.timeLimit || 60);
-      setIsAnswered(false);
-    } else {
-      // End of session
-      handleSessionComplete();
-    }
-  };
-
-  const handleSessionComplete = () => {
-    const finalScore = Math.floor((correctAnswers / puzzles.length) * 100);
-    const totalTime = Math.floor((Date.now() - gameStartTime) / 1000);
-    
-    // Update progress
-    if (categoryId && level) {
-      updateProgress(categoryId, parseInt(level), finalScore, totalTime);
-    }
-    
-    navigate(`/results/${categoryId}/${level}`, {
-      state: {
-        score: finalScore,
-        correctAnswers,
-        totalQuestions: puzzles.length,
-        totalTime,
-        sessionResults
-      }
-    });
-  };
-
-  const handlePause = () => {
-    setIsPaused(!isPaused);
-  };
-
-  const handleSkip = () => {
+  const handleTimeUp = useCallback(() => {
     if (!isAnswered) {
       handleAnswer(false, puzzles[currentPuzzleIndex]?.timeLimit * 1000 || 60000);
     }
-  };
+  }, [isAnswered, puzzles, currentPuzzleIndex, handleAnswer]);
+
+  const handlePause = useCallback(() => {
+    setIsPaused(!isPaused);
+  }, [isPaused]);
+
+  const handleSkip = useCallback(() => {
+    if (!isAnswered) {
+      handleAnswer(false, puzzles[currentPuzzleIndex]?.timeLimit * 1000 || 60000);
+    }
+  }, [isAnswered, puzzles, currentPuzzleIndex, handleAnswer]);
+
+  // Timer logic
+  useEffect(() => {
+    if (isPaused || isAnswered || timeLeft <= 0) return;
+
+    const timer = setInterval(() => {
+      setTimeLeft(prev => {
+        if (prev <= 1) {
+          handleTimeUp();
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [timeLeft, isPaused, isAnswered, handleTimeUp]);
 
   const currentCategory = categories.find(cat => cat.id === categoryId);
   const currentPuzzle = puzzles[currentPuzzleIndex];

@@ -24,7 +24,7 @@ export const useAdminData = () => {
     
     // Charger les utilisateurs depuis localStorage
     const storedUsers = JSON.parse(localStorage.getItem('cogniquest_users') || '[]');
-    const usersWithStats = storedUsers.map((user: any) => ({
+    const usersWithStats = storedUsers.map((user: User) => ({
       ...user,
       level: Math.floor(Math.random() * 20) + 1,
       totalXP: Math.floor(Math.random() * 5000),

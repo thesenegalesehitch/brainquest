@@ -21,6 +21,8 @@ const SequencePuzzle: React.FC<SequencePuzzleProps> = ({ puzzle, onAnswer, isAns
     }
   };
 
+  const content = puzzle.content as { sequence: (number | string)[]; type: string };
+
   return (
     <div className="space-y-6">
       <Card className="bg-gradient-to-r from-cosmic-500/10 to-stellar-500/10 border-cosmic-500/20">
@@ -28,28 +30,28 @@ const SequencePuzzle: React.FC<SequencePuzzleProps> = ({ puzzle, onAnswer, isAns
           <h3 className="text-lg font-semibold text-cosmic-400 mb-4 text-center">
             Trouvez le nombre suivant dans la séquence :
           </h3>
-          
+
           <div className="flex items-center justify-center space-x-4 text-2xl font-mono">
-            {puzzle.content.sequence.map((item: any, index: number) => (
+            {content.sequence.map((item: number | string, index: number) => (
               <div key={index} className="flex items-center space-x-4">
                 <div className={`
-                  px-4 py-2 rounded-lg border-2 
-                  ${item === '?' 
-                    ? 'border-stellar-400 bg-stellar-500/20 text-stellar-400' 
+                  px-4 py-2 rounded-lg border-2
+                  ${item === '?'
+                    ? 'border-stellar-400 bg-stellar-500/20 text-stellar-400'
                     : 'border-cosmic-400 bg-cosmic-500/20 text-cosmic-400'
                   }
                 `}>
                   {item}
                 </div>
-                {index < puzzle.content.sequence.length - 1 && (
+                {index < content.sequence.length - 1 && (
                   <span className="text-muted-foreground">→</span>
                 )}
               </div>
             ))}
           </div>
-          
+
           <p className="text-center text-sm text-muted-foreground mt-4">
-            Type: {puzzle.content.type === 'geometric' ? 'Suite géométrique' : 'Suite arithmétique'}
+            Type: {content.type === 'geometric' ? 'Suite géométrique' : 'Suite arithmétique'}
           </p>
         </CardContent>
       </Card>
