@@ -1,4 +1,5 @@
 
+import React from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -8,6 +9,8 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { ProgressProvider } from "@/contexts/ProgressContext";
 import AntiCheatProvider from "@/components/security/AntiCheatProvider";
 import ErrorBoundary from "@/components/ErrorBoundary";
+import { ServiceWorkerManager } from "@/utils/serviceWorker";
+import '@/utils/securityHeaders'; // Apply security headers
 import Index from "./pages/Index";
 import GamePage from "./pages/GamePage";
 import ResultsPage from "./pages/ResultsPage";
@@ -31,32 +34,41 @@ const queryClient = new QueryClient({
   },
 });
 
-const App = () => (
-  <ErrorBoundary>
-    <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <ProgressProvider>
-          <AntiCheatProvider>
-            <TooltipProvider>
-              <Toaster />
-              <Sonner />
-              <BrowserRouter>
-                <ErrorBoundary>
-                  <Routes>
-                    <Route path="/" element={<Index />} />
-                    <Route path="/game/:categoryId/:level" element={<GamePage />} />
-                    <Route path="/results/:categoryId/:level" element={<ResultsPage />} />
-                    <Route path="/admin" element={<AdminPage />} />
-                    <Route path="*" element={<NotFound />} />
-                  </Routes>
-                </ErrorBoundary>
-              </BrowserRouter>
-            </TooltipProvider>
-          </AntiCheatProvider>
-        </ProgressProvider>
-      </AuthProvider>
-    </QueryClientProvider>
-  </ErrorBoundary>
-);
+const App = () => {
+  // Initialize service worker
+  React.useEffect(() => {
+    if (ServiceWorkerManager.isSupported()) {
+      ServiceWorkerManager.register();
+    }
+  }, []);
+
+  return (
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <ProgressProvider>
+            <AntiCheatProvider>
+              <TooltipProvider>
+                <Toaster />
+                <Sonner />
+                <BrowserRouter>
+                  <ErrorBoundary>
+                    <Routes>
+                      <Route path="/" element={<Index />} />
+                      <Route path="/game/:categoryId/:level" element={<GamePage />} />
+                      <Route path="/results/:categoryId/:level" element={<ResultsPage />} />
+                      <Route path="/admin" element={<AdminPage />} />
+                      <Route path="*" element={<NotFound />} />
+                    </Routes>
+                  </ErrorBoundary>
+                </BrowserRouter>
+              </TooltipProvider>
+            </AntiCheatProvider>
+          </ProgressProvider>
+        </AuthProvider>
+      </QueryClientProvider>
+    </ErrorBoundary>
+  );
+};
 
 export default App;

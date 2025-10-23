@@ -5,6 +5,7 @@ import { Puzzle } from '@/types/puzzle';
 import { Category } from '@/data/categories';
 import { puzzles } from '@/data/puzzles';
 import { categories } from '@/data/categories';
+import { SecureStorage } from '@/utils/security';
 
 export const useAdminData = () => {
   const [users, setUsers] = useState<User[]>([]);
@@ -22,8 +23,8 @@ export const useAdminData = () => {
   const loadAdminData = () => {
     setIsLoading(true);
     
-    // Charger les utilisateurs depuis localStorage
-    const storedUsers = JSON.parse(localStorage.getItem('cogniquest_users') || '[]');
+    // Charger les utilisateurs depuis secure storage
+    const storedUsers = SecureStorage.getItem<any[]>('cogniquest_users') || [];
     const usersWithStats = storedUsers.map((user: User) => ({
       ...user,
       level: Math.floor(Math.random() * 20) + 1,
@@ -84,7 +85,7 @@ export const useAdminData = () => {
     setAchievements(mockAchievements);
 
     // Charger les sessions
-    const mockSessions = usersWithStats.slice(0, 10).map((user: User) => ({
+    const mockSessions: Session[] = usersWithStats.slice(0, 10).map((user: User) => ({
       id: `sess_${Math.random().toString(36).substr(2, 9)}`,
       userId: user.id,
       categoryId: categories[Math.floor(Math.random() * categories.length)].id,
@@ -94,7 +95,7 @@ export const useAdminData = () => {
       puzzlesSolved: Math.floor(Math.random() * 20),
       totalScore: Math.floor(Math.random() * 2000),
       violations: Math.floor(Math.random() * 3),
-      status: Math.random() > 0.7 ? 'active' : Math.random() > 0.5 ? 'completed' : 'abandoned'
+      status: (Math.random() > 0.7 ? 'active' : Math.random() > 0.5 ? 'completed' : 'abandoned') as 'active' | 'completed' | 'abandoned'
     }));
     setSessions(mockSessions);
 
@@ -124,22 +125,22 @@ export const useAdminData = () => {
     };
     const updatedUsers = [...users, newUser];
     setUsers(updatedUsers);
-    localStorage.setItem('cogniquest_users', JSON.stringify(updatedUsers));
+    SecureStorage.setItem('cogniquest_users', updatedUsers);
     return newUser;
   };
 
   const updateUser = (id: string, userData: Partial<User>) => {
-    const updatedUsers = users.map(user => 
+    const updatedUsers = users.map(user =>
       user.id === id ? { ...user, ...userData } : user
     );
     setUsers(updatedUsers);
-    localStorage.setItem('cogniquest_users', JSON.stringify(updatedUsers));
+    SecureStorage.setItem('cogniquest_users', updatedUsers);
   };
 
   const deleteUser = (id: string) => {
     const updatedUsers = users.filter(user => user.id !== id);
     setUsers(updatedUsers);
-    localStorage.setItem('cogniquest_users', JSON.stringify(updatedUsers));
+    SecureStorage.setItem('cogniquest_users', updatedUsers);
     
     // Supprimer aussi les progrès associés
     setUserProgress(prev => prev.filter(p => p.userId !== id));
@@ -155,22 +156,22 @@ export const useAdminData = () => {
     };
     const updatedAchievements = [...achievements, newAchievement];
     setAchievements(updatedAchievements);
-    localStorage.setItem('cogniquest_achievements', JSON.stringify(updatedAchievements));
+    SecureStorage.setItem('cogniquest_achievements', updatedAchievements);
     return newAchievement;
   };
 
   const updateAchievement = (id: string, achievementData: Partial<Achievement>) => {
-    const updatedAchievements = achievements.map(ach => 
+    const updatedAchievements = achievements.map(ach =>
       ach.id === id ? { ...ach, ...achievementData } : ach
     );
     setAchievements(updatedAchievements);
-    localStorage.setItem('cogniquest_achievements', JSON.stringify(updatedAchievements));
+    SecureStorage.setItem('cogniquest_achievements', updatedAchievements);
   };
 
   const deleteAchievement = (id: string) => {
     const updatedAchievements = achievements.filter(ach => ach.id !== id);
     setAchievements(updatedAchievements);
-    localStorage.setItem('cogniquest_achievements', JSON.stringify(updatedAchievements));
+    SecureStorage.setItem('cogniquest_achievements', updatedAchievements);
   };
 
   // CRUD Operations for Sessions

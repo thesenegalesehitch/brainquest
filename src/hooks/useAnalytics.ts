@@ -1,4 +1,5 @@
-import { useCallback } from 'react';
+import { useCallback, useEffect } from 'react';
+import { logger } from '@/utils/logger';
 
 interface AnalyticsEvent {
   event: string;
@@ -18,6 +19,25 @@ interface UserProperties {
 }
 
 export const useAnalytics = () => {
+  // Global error handler
+  useEffect(() => {
+    const handleError = (event: ErrorEvent) => {
+      trackError(new Error(event.message), 'global_error_handler');
+    };
+
+    const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
+      trackError(new Error(event.reason), 'unhandled_promise_rejection');
+    };
+
+    window.addEventListener('error', handleError);
+    window.addEventListener('unhandledrejection', handleUnhandledRejection);
+
+    return () => {
+      window.removeEventListener('error', handleError);
+      window.removeEventListener('unhandledrejection', handleUnhandledRejection);
+    };
+  }, []);
+
   const trackEvent = useCallback((eventData: AnalyticsEvent) => {
     // In development, log to console
     if (process.env.NODE_ENV === 'development') {
@@ -147,6 +167,9 @@ export const useAnalytics = () => {
   }, [trackEvent]);
 
   const trackError = useCallback((error: Error, context?: string) => {
+    // Log to our logger first
+    logger.error('Analytics Error', error, { context });
+
     trackEvent({
       event: 'error',
       category: 'error',

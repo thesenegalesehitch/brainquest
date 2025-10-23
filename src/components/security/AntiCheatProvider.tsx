@@ -1,5 +1,7 @@
 import React, { useEffect, useState, createContext, useContext } from 'react';
 import { toast } from '@/components/ui/sonner';
+import { ServerValidation } from '@/utils/serverValidation';
+import { SessionManager } from '@/utils/security';
 
 interface AntiCheatContextType {
   violations: number;
@@ -19,8 +21,23 @@ const AntiCheatProvider: React.FC<AntiCheatProviderProps> = ({ children }) => {
   const [violations, setViolations] = useState(0);
   const [isSecure, setIsSecure] = useState(true);
   const [lastActivity, setLastActivity] = useState(Date.now());
+  const [sessionValidated, setSessionValidated] = useState(false);
 
   useEffect(() => {
+    // Validate session integrity on mount
+    const validateSession = () => {
+      const session = SessionManager.getSession();
+      if (session) {
+        const isValid = ServerValidation.validateSessionIntegrity(session.sessionId, session.userId);
+        if (!isValid) {
+          addViolation('Session compromise détectée');
+        }
+      }
+      setSessionValidated(true);
+    };
+
+    validateSession();
+
     // Disable right-click context menu
     const handleContextMenu = (e: MouseEvent) => {
       e.preventDefault();
@@ -100,6 +117,15 @@ const AntiCheatProvider: React.FC<AntiCheatProviderProps> = ({ children }) => {
       }
     };
 
+    // Periodic session validation
+    const validateSessionPeriodically = () => {
+      const session = SessionManager.getSession();
+      if (session) {
+        const cheatingPatterns = ServerValidation.detectCheatingPatterns(session.userId);
+        cheatingPatterns.forEach(pattern => addViolation(pattern));
+      }
+    };
+
     // Activity monitoring
     const checkInactivity = () => {
       const now = Date.now();
@@ -119,6 +145,7 @@ const AntiCheatProvider: React.FC<AntiCheatProviderProps> = ({ children }) => {
     // Intervals
     const devToolsInterval = setInterval(checkDevTools, 1000);
     const inactivityInterval = setInterval(checkInactivity, 60000);
+    const sessionValidationInterval = setInterval(validateSessionPeriodically, 300000); // Every 5 minutes
 
     return () => {
       document.removeEventListener('contextmenu', handleContextMenu);
@@ -129,6 +156,7 @@ const AntiCheatProvider: React.FC<AntiCheatProviderProps> = ({ children }) => {
       document.removeEventListener('paste', handlePaste);
       clearInterval(devToolsInterval);
       clearInterval(inactivityInterval);
+      clearInterval(sessionValidationInterval);
     };
   }, [lastActivity]);
 
@@ -158,14 +186,16 @@ const AntiCheatProvider: React.FC<AntiCheatProviderProps> = ({ children }) => {
 
   return (
     <AntiCheatContext.Provider value={{ violations, isSecure }}>
-      {isSecure ? children : (
-        <div className="min-h-screen stellar-bg flex items-center justify-center">
-          <div className="text-center text-red-400">
-            <h1 className="text-4xl font-bold mb-4">⚠️ Session Terminée</h1>
-            <p className="text-lg">Activité suspecte détectée</p>
-            <p className="text-sm mt-2">Redirection en cours...</p>
+      {sessionValidated && (
+        isSecure ? children : (
+          <div className="min-h-screen stellar-bg flex items-center justify-center">
+            <div className="text-center text-red-400">
+              <h1 className="text-4xl font-bold mb-4">⚠️ Session Terminée</h1>
+              <p className="text-lg">Activité suspecte détectée</p>
+              <p className="text-sm mt-2">Redirection en cours...</p>
+            </div>
           </div>
-        </div>
+        )
       )}
     </AntiCheatContext.Provider>
   );

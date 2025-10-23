@@ -1,6 +1,10 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
+import { SecurityUtils, SecureStorage, SessionManager } from '@/utils/security';
+import { authRateLimiter } from '@/utils/rateLimiter';
+import { supabase } from '@/utils/supabase';
+import type { User as SupabaseUser } from '@supabase/supabase-js';
 
 interface User {
   id: string;
@@ -34,6 +38,90 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const { toast } = useToast();
 
+  // Load user profile from database
+  const loadUserProfile = async (supabaseUser: SupabaseUser) => {
+    try {
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', supabaseUser.id)
+        .single();
+
+      if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
+        console.error('Error loading profile:', error);
+        return;
+      }
+
+      if (profile) {
+        const userData: User = {
+          id: profile.id,
+          email: profile.email,
+          username: profile.username,
+          createdAt: profile.created_at,
+        };
+        setUser(userData);
+      } else {
+        // Create profile if it doesn't exist
+        const { data: newProfile, error: insertError } = await supabase
+          .from('profiles')
+          .insert({
+            id: supabaseUser.id,
+            email: supabaseUser.email!,
+            username: supabaseUser.user_metadata?.username || supabaseUser.email!.split('@')[0],
+            level: 1,
+            total_xp: 0,
+            streak: 0,
+          })
+          .select()
+          .single();
+
+        if (insertError) {
+          console.error('Error creating profile:', insertError);
+          return;
+        }
+
+        if (newProfile) {
+          const userData: User = {
+            id: newProfile.id,
+            email: newProfile.email,
+            username: newProfile.username,
+            createdAt: newProfile.created_at,
+          };
+          setUser(userData);
+        }
+      }
+    } catch (error) {
+      console.error('Error in loadUserProfile:', error);
+    }
+  };
+
+  // Initialize Supabase auth state
+  useEffect(() => {
+    // Get initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        loadUserProfile(session.user);
+      } else {
+        setIsLoading(false);
+      }
+    });
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (event === 'SIGNED_IN' && session?.user) {
+          await loadUserProfile(session.user);
+        } else if (event === 'SIGNED_OUT') {
+          setUser(null);
+          SessionManager.clearSession();
+        }
+        setIsLoading(false);
+      }
+    );
+
+    return () => subscription.unsubscribe();
+  }, []);
+
   // Monitor online status
   useEffect(() => {
     const handleOnline = () => {
@@ -62,63 +150,81 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   }, [toast]);
 
-  // Load user from localStorage on app start
-  useEffect(() => {
-    const loadUser = () => {
-      try {
-        const storedUser = localStorage.getItem('cogniquest_user');
-        if (storedUser) {
-          const userData = JSON.parse(storedUser);
-          setUser(userData);
-        }
-      } catch (error) {
-        console.error('Error loading user from localStorage:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    loadUser();
-  }, []);
+  // Remove old localStorage loading since we now use Supabase auth state
 
   const signUp = async (email: string, password: string, username: string): Promise<boolean> => {
     try {
       setIsLoading(true);
-      
-      // Simulate API call - in real app, this would be a backend call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Check if user already exists (mock validation)
-      const existingUsers = JSON.parse(localStorage.getItem('cogniquest_users') || '[]');
-      if (existingUsers.some((u: User) => u.email === email)) {
+
+      // Rate limiting check
+      if (!authRateLimiter.isAllowed(`signup_${email}`)) {
+        const remainingTime = Math.ceil((authRateLimiter.getResetTime(`signup_${email}`) - Date.now()) / 1000 / 60);
         toast({
-          title: "Erreur d'inscription",
-          description: "Un compte avec cet email existe déjà",
+          title: "Trop de tentatives",
+          description: `Veuillez réessayer dans ${remainingTime} minutes`,
           variant: "destructive",
         });
         return false;
       }
 
-      const newUser: User = {
-        id: crypto.randomUUID(),
-        email,
-        username,
-        createdAt: new Date().toISOString(),
-      };
+      // Validate inputs
+      if (!SecurityUtils.validateEmail(email)) {
+        toast({
+          title: "Erreur d'inscription",
+          description: "Format d'email invalide",
+          variant: "destructive",
+        });
+        return false;
+      }
 
-      // Store user data
-      existingUsers.push(newUser);
-      localStorage.setItem('cogniquest_users', JSON.stringify(existingUsers));
-      localStorage.setItem('cogniquest_user', JSON.stringify(newUser));
-      
-      setUser(newUser);
-      
-      toast({
-        title: "Inscription réussie",
-        description: `Bienvenue ${username} !`,
+      if (!SecurityUtils.validateUsername(username)) {
+        toast({
+          title: "Erreur d'inscription",
+          description: "Nom d'utilisateur invalide (3-20 caractères, lettres/chiffres/underscore)",
+          variant: "destructive",
+        });
+        return false;
+      }
+
+      if (!SecurityUtils.validatePassword(password)) {
+        toast({
+          title: "Erreur d'inscription",
+          description: "Mot de passe trop faible (8+ caractères, maj/min/chiffre)",
+          variant: "destructive",
+        });
+        return false;
+      }
+
+      // Sign up with Supabase
+      const { data, error } = await supabase.auth.signUp({
+        email: SecurityUtils.sanitizeInput(email),
+        password,
+        options: {
+          data: {
+            username: SecurityUtils.sanitizeInput(username),
+          }
+        }
       });
-      
-      return true;
+
+      if (error) {
+        console.error('Supabase signup error:', error);
+        toast({
+          title: "Erreur d'inscription",
+          description: error.message,
+          variant: "destructive",
+        });
+        return false;
+      }
+
+      if (data.user) {
+        toast({
+          title: "Inscription réussie",
+          description: `Bienvenue ${username} ! Vérifiez votre email pour confirmer votre compte.`,
+        });
+        return true;
+      }
+
+      return false;
     } catch (error) {
       console.error('Sign up error:', error);
       toast({
@@ -135,31 +241,54 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signIn = async (email: string, password: string): Promise<boolean> => {
     try {
       setIsLoading(true);
-      
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      const existingUsers = JSON.parse(localStorage.getItem('cogniquest_users') || '[]');
-      const foundUser = existingUsers.find((u: User) => u.email === email);
-      
-      if (!foundUser) {
+
+      // Rate limiting check
+      if (!authRateLimiter.isAllowed(`signin_${email}`)) {
+        const remainingTime = Math.ceil((authRateLimiter.getResetTime(`signin_${email}`) - Date.now()) / 1000 / 60);
         toast({
-          title: "Erreur de connexion",
-          description: "Email ou mot de passe incorrect",
+          title: "Trop de tentatives",
+          description: `Veuillez réessayer dans ${remainingTime} minutes`,
           variant: "destructive",
         });
         return false;
       }
 
-      localStorage.setItem('cogniquest_user', JSON.stringify(foundUser));
-      setUser(foundUser);
-      
-      toast({
-        title: "Connexion réussie",
-        description: `Bon retour ${foundUser.username} !`,
+      // Validate inputs
+      if (!SecurityUtils.validateEmail(email)) {
+        toast({
+          title: "Erreur de connexion",
+          description: "Format d'email invalide",
+          variant: "destructive",
+        });
+        return false;
+      }
+
+      // Sign in with Supabase
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: SecurityUtils.sanitizeInput(email),
+        password,
       });
-      
-      return true;
+
+      if (error) {
+        console.error('Supabase signin error:', error);
+        toast({
+          title: "Erreur de connexion",
+          description: error.message,
+          variant: "destructive",
+        });
+        return false;
+      }
+
+      if (data.user) {
+        // User profile will be loaded by the auth state change listener
+        toast({
+          title: "Connexion réussie",
+          description: `Bon retour !`,
+        });
+        return true;
+      }
+
+      return false;
     } catch (error) {
       console.error('Sign in error:', error);
       toast({
@@ -173,13 +302,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const signOut = () => {
-    localStorage.removeItem('cogniquest_user');
-    setUser(null);
-    toast({
-      title: "Déconnexion",
-      description: "À bientôt !",
-    });
+  const signOut = async () => {
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        console.error('Supabase signout error:', error);
+      }
+
+      SessionManager.clearSession();
+      setUser(null);
+      toast({
+        title: "Déconnexion",
+        description: "À bientôt !",
+      });
+    } catch (error) {
+      console.error('Sign out error:', error);
+      // Force local sign out even if Supabase fails
+      SessionManager.clearSession();
+      setUser(null);
+    }
   };
 
   const value: AuthContextType = {

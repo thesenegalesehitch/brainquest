@@ -1,6 +1,8 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useAuth } from './AuthContext';
+import { SecureStorage } from '@/utils/security';
+import { supabase } from '@/utils/supabase';
 
 interface CategoryProgress {
   progress: number;
@@ -73,24 +75,81 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [categoryProgress, setCategoryProgress] = useState<Record<string, CategoryProgress>>(defaultCategoryProgress);
   const [isLoading, setIsLoading] = useState(false);
 
-  const loadProgress = useCallback(() => {
+  const loadProgress = useCallback(async () => {
+    if (!user?.id) return;
+
     try {
-      const savedStats = localStorage.getItem(`cogniquest_stats_${user?.id}`);
-      const savedCategories = localStorage.getItem(`cogniquest_categories_${user?.id}`);
+      // Load user profile stats
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('level, total_xp, streak')
+        .eq('id', user.id)
+        .single();
 
-      if (savedStats) {
-        setUserStats(JSON.parse(savedStats));
+      if (profileError) {
+        console.error('Error loading profile:', profileError);
+        return;
       }
 
-      if (savedCategories) {
-        setCategoryProgress(JSON.parse(savedCategories));
+      // Load category progress
+      const { data: progressData, error: progressError } = await supabase
+        .from('user_progress')
+        .select('*')
+        .eq('user_id', user.id);
+
+      if (progressError) {
+        console.error('Error loading progress:', progressError);
+        return;
       }
+
+      // Convert database format to app format
+      const categoryProgressMap: Record<string, CategoryProgress> = {};
+      progressData.forEach(item => {
+        categoryProgressMap[item.category_id] = {
+          progress: item.progress,
+          level: item.level,
+          puzzlesCompleted: item.puzzles_completed,
+          isLocked: item.level < 2, // Unlock logic based on level
+          lastPlayed: item.last_played,
+          bestScore: item.best_score,
+          totalTime: item.total_time
+        };
+      });
+
+      // Fill missing categories with defaults
+      Object.keys(defaultCategoryProgress).forEach(categoryId => {
+        if (!categoryProgressMap[categoryId]) {
+          categoryProgressMap[categoryId] = { ...defaultCategoryProgress[categoryId] };
+        }
+      });
+
+      // Calculate stats from profile and progress
+      const totalPuzzlesSolved = progressData.reduce((sum, item) => sum + item.puzzles_completed, 0);
+      const averageScore = progressData.length > 0 ?
+        progressData.reduce((sum, item) => sum + (item.best_score || 0), 0) / progressData.length : 0;
+
+      const userStats: UserStats = {
+        totalXP: profile.total_xp,
+        level: profile.level,
+        streak: profile.streak,
+        puzzlesSolved: totalPuzzlesSolved,
+        averageScore: Math.floor(averageScore),
+        timeSpent: progressData.reduce((sum, item) => sum + item.total_time, 0),
+        achievements: 0, // TODO: Calculate from achievements table
+        weeklyProgress: totalPuzzlesSolved,
+        lastPlayDate: progressData.length > 0 ?
+          progressData.sort((a, b) => new Date(b.last_played).getTime() - new Date(a.last_played).getTime())[0].last_played :
+          undefined
+      };
+
+      setUserStats(userStats);
+      setCategoryProgress(categoryProgressMap);
     } catch (error) {
       console.error('Error loading progress:', error);
     }
   }, [user?.id]);
 
-  // Load progress from localStorage
+  // Load progress from Supabase
   useEffect(() => {
     if (user) {
       loadProgress();
@@ -112,16 +171,53 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
   }, [user]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const saveProgress = () => {
+  const saveProgress = async () => {
     if (!user) return;
 
     try {
-      localStorage.setItem(`cogniquest_stats_${user.id}`, JSON.stringify(userStats));
-      localStorage.setItem(`cogniquest_categories_${user.id}`, JSON.stringify(categoryProgress));
-      
-      // Mark for sync when online
+      // Update profile stats
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({
+          level: userStats.level,
+          total_xp: userStats.totalXP,
+          streak: userStats.streak,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', user.id);
+
+      if (profileError) {
+        console.error('Error saving profile:', profileError);
+      }
+
+      // Update category progress
+      const progressUpdates = Object.entries(categoryProgress).map(([categoryId, progress]) => ({
+        user_id: user.id,
+        category_id: categoryId,
+        level: progress.level,
+        puzzles_completed: progress.puzzlesCompleted,
+        progress: progress.progress,
+        best_score: progress.bestScore || 0,
+        total_time: progress.totalTime || 0,
+        last_played: progress.lastPlayed || new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      }));
+
+      for (const update of progressUpdates) {
+        const { error } = await supabase
+          .from('user_progress')
+          .upsert(update, {
+            onConflict: 'user_id,category_id'
+          });
+
+        if (error) {
+          console.error('Error saving progress:', error);
+        }
+      }
+
+      // Mark for sync when online (for future offline support)
       if (!isOnline) {
-        localStorage.setItem(`cogniquest_needs_sync_${user.id}`, 'true');
+        SecureStorage.setItem(`cogniquest_needs_sync_${user.id}`, true);
       }
     } catch (error) {
       console.error('Error saving progress:', error);
@@ -206,12 +302,40 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     setTimeout(saveProgress, 100);
   };
 
-  const resetProgress = () => {
-    setUserStats(defaultUserStats);
-    setCategoryProgress(defaultCategoryProgress);
-    if (user) {
-      localStorage.removeItem(`cogniquest_stats_${user.id}`);
-      localStorage.removeItem(`cogniquest_categories_${user.id}`);
+  const resetProgress = async () => {
+    if (!user) return;
+
+    try {
+      // Reset profile stats
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({
+          level: 1,
+          total_xp: 0,
+          streak: 0,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', user.id);
+
+      if (profileError) {
+        console.error('Error resetting profile:', profileError);
+      }
+
+      // Delete all progress records
+      const { error: progressError } = await supabase
+        .from('user_progress')
+        .delete()
+        .eq('user_id', user.id);
+
+      if (progressError) {
+        console.error('Error resetting progress:', progressError);
+      }
+
+      // Reset local state
+      setUserStats(defaultUserStats);
+      setCategoryProgress(defaultCategoryProgress);
+    } catch (error) {
+      console.error('Error resetting progress:', error);
     }
   };
 
@@ -220,10 +344,10 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
     setIsLoading(true);
     try {
-      // Simulate cloud sync - in real app, this would sync with backend
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      localStorage.removeItem(`cogniquest_needs_sync_${user.id}`);
+      // Force reload progress from database to ensure sync
+      await loadProgress();
+
+      SecureStorage.removeItem(`cogniquest_needs_sync_${user.id}`);
       console.log('Progress synced successfully');
     } catch (error) {
       console.error('Error syncing progress:', error);
