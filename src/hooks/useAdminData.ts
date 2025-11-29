@@ -24,8 +24,15 @@ export const useAdminData = () => {
     setIsLoading(true);
 
     // Charger les utilisateurs depuis secure storage
-    const storedUsers = SecureStorage.getItem<User[]>('cogniquest_users') || [];
-    const usersWithStats = storedUsers.map((user: User) => ({
+    interface AdminUser extends User {
+      level: number;
+      totalXP: number;
+      streak: number;
+      isAdmin: boolean;
+    }
+
+    const storedUsers = (SecureStorage.getItem<User[]>('cogniquest_users') || []) as User[];
+    const usersWithStats: AdminUser[] = storedUsers.map((user: User) => ({
       ...user,
       level: Math.floor(Math.random() * 20) + 1,
       totalXP: Math.floor(Math.random() * 5000),

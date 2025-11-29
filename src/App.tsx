@@ -1,6 +1,7 @@
 import React from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { AuthProvider } from "@/contexts/AuthContext";
 import ErrorBoundary from "@/components/ErrorBoundary";
 
 const queryClient = new QueryClient({
@@ -32,7 +33,7 @@ const TestPage = () => (
   }}>
     <div style={{ textAlign: 'center', maxWidth: '600px' }}>
       <h1 style={{ fontSize: '3rem', marginBottom: '1rem' }}>🧠 CogniQuest++</h1>
-      <p style={{ fontSize: '1.5rem', marginBottom: '2rem' }}>Step 2: QueryClient + ErrorBoundary</p>
+      <p style={{ fontSize: '1.5rem', marginBottom: '2rem' }}>Step 3: AuthContext Added</p>
       <div style={{
         background: 'rgba(34, 211, 238, 0.1)',
         border: '1px solid rgba(34, 211, 238, 0.3)',
@@ -44,7 +45,8 @@ const TestPage = () => (
           ✅ React is working<br />
           ✅ Router is working<br />
           ✅ QueryClient is working<br />
-          ✅ ErrorBoundary is working
+          ✅ ErrorBoundary is working<br />
+          ✅ AuthContext is working
         </p>
       </div>
     </div>
@@ -55,11 +57,13 @@ const App = () => {
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
-        <BrowserRouter>
-          <Routes>
-            <Route path="*" element={<TestPage />} />
-          </Routes>
-        </BrowserRouter>
+        <AuthProvider>
+          <BrowserRouter>
+            <Routes>
+              <Route path="*" element={<TestPage />} />
+            </Routes>
+          </BrowserRouter>
+        </AuthProvider>
       </QueryClientProvider>
     </ErrorBoundary>
   );

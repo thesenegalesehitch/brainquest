@@ -20,68 +20,95 @@ export const usePerformanceMonitor = () => {
   useEffect(() => {
     // First Contentful Paint
     const observeFCP = () => {
-      const observer = new PerformanceObserver((list) => {
-        const entries = list.getEntries();
+      const observer = new PerformanceObserver((list: PerformanceObserverEntryList) => {
+        const entries = list.getEntries() as PerformanceEntry[];
         const lastEntry = entries[entries.length - 1];
-        metricsRef.current.fcp = lastEntry.startTime;
-        console.log('FCP:', lastEntry.startTime);
+        metricsRef.current.fcp = lastEntry?.startTime ?? null;
+        console.log('FCP:', lastEntry?.startTime ?? null);
       });
-      observer.observe({ entryTypes: ['paint'] });
+      try {
+        observer.observe({ entryTypes: ['paint'] });
+      } catch {
+        // ignore environments that don't support this observer option
+      }
     };
 
     // Largest Contentful Paint
     const observeLCP = () => {
-      const observer = new PerformanceObserver((list) => {
-        const entries = list.getEntries();
+      const observer = new PerformanceObserver((list: PerformanceObserverEntryList) => {
+        const entries = list.getEntries() as PerformanceEntry[];
         const lastEntry = entries[entries.length - 1];
-        metricsRef.current.lcp = lastEntry.startTime;
-        console.log('LCP:', lastEntry.startTime);
+        metricsRef.current.lcp = lastEntry?.startTime ?? null;
+        console.log('LCP:', lastEntry?.startTime ?? null);
       });
-      observer.observe({ entryTypes: ['largest-contentful-paint'] });
+      try {
+        observer.observe({ entryTypes: ['largest-contentful-paint'] });
+      } catch {
+        // ignore environments that don't support this observer option
+      }
     };
 
     // First Input Delay
     const observeFID = () => {
-      const observer = new PerformanceObserver((list) => {
-        const entries = list.getEntries();
-        entries.forEach((entry: PerformanceEventTiming) => {
-          metricsRef.current.fid = entry.processingStart - entry.startTime;
-          console.log('FID:', entry.processingStart - entry.startTime);
+      const observer = new PerformanceObserver((list: PerformanceObserverEntryList) => {
+        const entries = list.getEntries() as PerformanceEventTiming[];
+        entries.forEach((entry) => {
+          const processingStart = entry.processingStart ?? 0;
+          metricsRef.current.fid = processingStart - entry.startTime;
+          console.log('FID:', processingStart - entry.startTime);
         });
       });
-      observer.observe({ entryTypes: ['first-input'] });
+      try {
+        // preferred shape when available
+        observer.observe({ type: 'first-input', buffered: true } as PerformanceObserverInit);
+      } catch {
+        // fallback for environments expecting entryTypes
+        try {
+          observer.observe({ entryTypes: ['first-input'] } as PerformanceObserverInit);
+        } catch {
+          // ignore
+        }
+      }
     };
 
     // Cumulative Layout Shift
     const observeCLS = () => {
       let clsValue = 0;
-      const observer = new PerformanceObserver((list) => {
-        const entries = list.getEntries();
-        entries.forEach((entry: PerformanceEntry) => {
-          const layoutShiftEntry = entry as PerformanceEntry & { hadRecentInput?: boolean; value?: number };
-          if (layoutShiftEntry.hadRecentInput === false) {
-            clsValue += layoutShiftEntry.value || 0;
+      const observer = new PerformanceObserver((list: PerformanceObserverEntryList) => {
+        const entries = list.getEntries() as Array<LayoutShift & { value?: number; hadRecentInput?: boolean }>;
+        entries.forEach((entry) => {
+          if (entry.hadRecentInput === false) {
+            clsValue += entry.value || 0;
           }
         });
         metricsRef.current.cls = clsValue;
         console.log('CLS:', clsValue);
       });
-      observer.observe({ entryTypes: ['layout-shift'] });
+      try {
+        observer.observe({ entryTypes: ['layout-shift'] });
+      } catch {
+        // ignore
+      }
     };
 
     // Time to First Byte
     const observeTTFB = () => {
-      const observer = new PerformanceObserver((list) => {
-        const entries = list.getEntries();
-        entries.forEach((entry: PerformanceEntry) => {
-          const navigationEntry = entry as PerformanceEntry & { responseStart?: number; requestStart?: number };
-          if (navigationEntry.responseStart && navigationEntry.responseStart > 0) {
-            metricsRef.current.ttfb = navigationEntry.responseStart - (navigationEntry.requestStart || 0);
-            console.log('TTFB:', navigationEntry.responseStart - (navigationEntry.requestStart || 0));
+      const observer = new PerformanceObserver((list: PerformanceObserverEntryList) => {
+        const entries = list.getEntries() as PerformanceNavigationTiming[];
+        entries.forEach((entry) => {
+          const responseStart = entry.responseStart ?? 0;
+          const requestStart = entry.requestStart ?? 0;
+          if (responseStart > 0 && requestStart >= 0) {
+            metricsRef.current.ttfb = responseStart - requestStart;
+            console.log('TTFB:', responseStart - requestStart);
           }
         });
       });
-      observer.observe({ entryTypes: ['navigation'] });
+      try {
+        observer.observe({ entryTypes: ['navigation'] });
+      } catch {
+        // ignore
+      }
     };
 
     // Initialize observers
