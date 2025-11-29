@@ -7,23 +7,16 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ProgressProvider } from "@/contexts/ProgressContext";
-import AntiCheatProvider from "@/components/security/AntiCheatProvider";
 import ErrorBoundary from "@/components/ErrorBoundary";
-// import { ServiceWorkerManager } from "@/utils/serviceWorker";
-// import '@/utils/securityHeaders'; // Apply security headers
 import Index from "./pages/Index";
-import GamePage from "./pages/GamePage";
-import ResultsPage from "./pages/ResultsPage";
-import AdminPage from "./pages/AdminPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 5 * 60 * 1000, // 5 minutes
-      gcTime: 10 * 60 * 1000, // 10 minutes
+      staleTime: 5 * 60 * 1000,
+      gcTime: 10 * 60 * 1000,
       retry: (failureCount, error) => {
-        // Don't retry on 4xx errors
         if (error && typeof error === 'object' && 'status' in error &&
           typeof error.status === 'number' && error.status >= 400 && error.status < 500) {
           return false;
@@ -35,35 +28,23 @@ const queryClient = new QueryClient({
 });
 
 const App = () => {
-  // Initialize service worker - DISABLED to prevent crashes
-  // React.useEffect(() => {
-  //   if (ServiceWorkerManager.isSupported()) {
-  //     ServiceWorkerManager.register();
-  //   }
-  // }, []);
-
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
           <ProgressProvider>
-            <AntiCheatProvider>
-              <TooltipProvider>
-                <Toaster />
-                <Sonner />
-                <BrowserRouter>
-                  <ErrorBoundary>
-                    <Routes>
-                      <Route path="/" element={<Index />} />
-                      <Route path="/game/:categoryId/:level" element={<GamePage />} />
-                      <Route path="/results/:categoryId/:level" element={<ResultsPage />} />
-                      <Route path="/admin" element={<AdminPage />} />
-                      <Route path="*" element={<NotFound />} />
-                    </Routes>
-                  </ErrorBoundary>
-                </BrowserRouter>
-              </TooltipProvider>
-            </AntiCheatProvider>
+            <TooltipProvider>
+              <Toaster />
+              <Sonner />
+              <BrowserRouter>
+                <ErrorBoundary>
+                  <Routes>
+                    <Route path="/" element={<Index />} />
+                    <Route path="*" element={<NotFound />} />
+                  </Routes>
+                </ErrorBoundary>
+              </BrowserRouter>
+            </TooltipProvider>
           </ProgressProvider>
         </AuthProvider>
       </QueryClientProvider>
