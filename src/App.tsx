@@ -9,8 +9,8 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { ProgressProvider } from "@/contexts/ProgressContext";
 import AntiCheatProvider from "@/components/security/AntiCheatProvider";
 import ErrorBoundary from "@/components/ErrorBoundary";
-import { ServiceWorkerManager } from "@/utils/serviceWorker";
-import '@/utils/securityHeaders'; // Apply security headers
+// import { ServiceWorkerManager } from "@/utils/serviceWorker";
+// import '@/utils/securityHeaders'; // Apply security headers
 import Index from "./pages/Index";
 import GamePage from "./pages/GamePage";
 import ResultsPage from "./pages/ResultsPage";
@@ -24,8 +24,8 @@ const queryClient = new QueryClient({
       gcTime: 10 * 60 * 1000, // 10 minutes
       retry: (failureCount, error) => {
         // Don't retry on 4xx errors
-        if (error && typeof error === 'object' && 'status' in error && 
-            typeof error.status === 'number' && error.status >= 400 && error.status < 500) {
+        if (error && typeof error === 'object' && 'status' in error &&
+          typeof error.status === 'number' && error.status >= 400 && error.status < 500) {
           return false;
         }
         return failureCount < 3;
@@ -35,12 +35,12 @@ const queryClient = new QueryClient({
 });
 
 const App = () => {
-  // Initialize service worker
-  React.useEffect(() => {
-    if (ServiceWorkerManager.isSupported()) {
-      ServiceWorkerManager.register();
-    }
-  }, []);
+  // Initialize service worker - DISABLED to prevent crashes
+  // React.useEffect(() => {
+  //   if (ServiceWorkerManager.isSupported()) {
+  //     ServiceWorkerManager.register();
+  //   }
+  // }, []);
 
   return (
     <ErrorBoundary>

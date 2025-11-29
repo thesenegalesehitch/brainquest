@@ -113,31 +113,31 @@ export class ServiceWorkerManager {
   }
 }
 
-// Initialize service worker when module loads
-if (typeof window !== 'undefined') {
-  // Register service worker after page load
-  window.addEventListener('load', () => {
-    ServiceWorkerManager.register();
-  });
+// Initialize service worker when module loads - DISABLED to prevent crashes
+// if (typeof window !== 'undefined') {
+//   // Register service worker after page load
+//   window.addEventListener('load', () => {
+//     ServiceWorkerManager.register();
+//   });
 
-  // Handle PWA install prompt
-  let deferredPrompt: BeforeInstallPromptEvent | null;
+//   // Handle PWA install prompt
+//   let deferredPrompt: BeforeInstallPromptEvent | null;
 
-  window.addEventListener('beforeinstallprompt', (e) => {
-    e.preventDefault();
-    deferredPrompt = e;
+//   window.addEventListener('beforeinstallprompt', (e) => {
+//     e.preventDefault();
+//     deferredPrompt = e;
 
-    // Show install button
-    window.dispatchEvent(new CustomEvent('pwa-install-available'));
-  });
+//     // Show install button
+//     window.dispatchEvent(new CustomEvent('pwa-install-available'));
+//   });
 
-  // Function to trigger install
-  window.installPWA = async () => {
-    if (deferredPrompt) {
-      deferredPrompt.prompt();
-      const { outcome } = await deferredPrompt.userChoice;
-      console.log(`PWA install outcome: ${outcome}`);
-      deferredPrompt = null;
-    }
-  };
-}
+//   // Function to trigger install
+//   window.installPWA = async () => {
+//     if (deferredPrompt) {
+//       deferredPrompt.prompt();
+//       const { outcome } = await deferredPrompt.userChoice;
+//       console.log(`PWA install outcome: ${outcome}`);
+//       deferredPrompt = null;
+//     }
+//   };
+// }
