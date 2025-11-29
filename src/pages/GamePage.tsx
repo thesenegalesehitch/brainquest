@@ -8,8 +8,8 @@ import PuzzleRenderer from '@/components/puzzles/PuzzleRenderer';
 import { getPuzzlesByCategory } from '@/data/puzzles';
 import { categories } from '@/data/categories';
 import { Puzzle } from '@/types/puzzle';
-import { useAuth } from '@/contexts/AuthContext';
-import { useProgress } from '@/contexts/ProgressContext';
+import { useAuth } from '@/hooks/useAuth';
+import { useProgress } from '@/hooks/useProgress';
 import { useToast } from '@/hooks/use-toast';
 
 const GamePage = () => {
@@ -18,7 +18,7 @@ const GamePage = () => {
   const { user } = useAuth();
   const { updateProgress } = useProgress();
   const { toast } = useToast();
-  
+
   const [puzzles, setPuzzles] = useState<Puzzle[]>([]);
   const [currentPuzzleIndex, setCurrentPuzzleIndex] = useState(0);
   const [timeLeft, setTimeLeft] = useState(60);
@@ -171,7 +171,7 @@ const GamePage = () => {
         <div className="card-cosmic">
           <h2 className="text-2xl font-bold mb-4">Chargement...</h2>
           <div className="w-full bg-dark-200 rounded-full h-2">
-            <div className="bg-cosmic-400 h-2 rounded-full animate-pulse" style={{width: '60%'}}></div>
+            <div className="bg-cosmic-400 h-2 rounded-full animate-pulse" style={{ width: '60%' }}></div>
           </div>
         </div>
       </div>
@@ -193,7 +193,7 @@ const GamePage = () => {
               >
                 <Home className="h-5 w-5" />
               </Button>
-              
+
               <div>
                 <h1 className="text-xl font-bold text-cosmic-400">
                   {currentCategory?.title} - Niveau {level}
@@ -258,7 +258,7 @@ const GamePage = () => {
               <p className="text-muted-foreground mb-6">
                 Reprenez quand vous êtes prêt !
               </p>
-              <Button 
+              <Button
                 onClick={handlePause}
                 className="bg-gradient-to-r from-cosmic-500 to-stellar-500 hover:from-cosmic-600 hover:to-stellar-600"
               >

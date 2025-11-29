@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import { useAdminData } from '@/hooks/useAdminData';
 import AdminLayout from '@/components/admin/AdminLayout';
@@ -12,7 +12,7 @@ const AdminPage: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('dashboard');
-  
+
   const {
     users,
     userProgress,
@@ -40,12 +40,19 @@ const AdminPage: React.FC = () => {
       return;
     }
 
-    // Pour la démo, on considère qu'un utilisateur avec email admin@cogniquest.com est admin
-    // En production, cela devrait être géré côté serveur
-    const isAdmin = user.email === 'admin@cogniquest.com' || 
-                   user.username.toLowerCase() === 'admin' ||
-                   localStorage.getItem('cogniquest_admin_override') === 'true';
-    
+    const ADMIN_EMAILS = [
+      'admin@cogniquest.com',
+      'ndouralexandre09@gmail.com'
+    ];
+
+    // Add env var admins if configured
+    const envAdmins = import.meta.env.VITE_ADMIN_EMAILS?.split(',') || [];
+    const allAdmins = [...ADMIN_EMAILS, ...envAdmins].map(e => e.trim().toLowerCase());
+
+    const isAdmin = allAdmins.includes(user.email?.toLowerCase() || '') ||
+      user.username.toLowerCase() === 'admin' ||
+      localStorage.getItem('cogniquest_admin_override') === 'true';
+
     if (!isAdmin) {
       navigate('/');
       return;
@@ -67,7 +74,7 @@ const AdminPage: React.FC = () => {
     switch (activeTab) {
       case 'dashboard':
         return adminStats ? <AdminDashboard stats={adminStats} /> : null;
-      
+
       case 'users':
         return (
           <UserManagement
@@ -77,7 +84,7 @@ const AdminPage: React.FC = () => {
             onDeleteUser={deleteUser}
           />
         );
-      
+
       case 'puzzles':
         return (
           <div className="space-y-6">
@@ -103,7 +110,7 @@ const AdminPage: React.FC = () => {
             </div>
           </div>
         );
-      
+
       case 'categories':
         return (
           <div className="space-y-6">
@@ -133,7 +140,7 @@ const AdminPage: React.FC = () => {
             </div>
           </div>
         );
-      
+
       case 'achievements':
         return (
           <div className="space-y-6">
@@ -163,7 +170,7 @@ const AdminPage: React.FC = () => {
             </div>
           </div>
         );
-      
+
       case 'sessions':
         return (
           <div className="space-y-6">
@@ -178,11 +185,10 @@ const AdminPage: React.FC = () => {
                     <div>
                       <div className="flex items-center space-x-2 mb-2">
                         <span className="text-white font-medium">Session {session.id}</span>
-                        <span className={`px-2 py-1 rounded text-xs ${
-                          session.status === 'active' ? 'bg-green-500/20 text-green-400' :
+                        <span className={`px-2 py-1 rounded text-xs ${session.status === 'active' ? 'bg-green-500/20 text-green-400' :
                           session.status === 'completed' ? 'bg-blue-500/20 text-blue-400' :
-                          'bg-red-500/20 text-red-400'
-                        }`}>
+                            'bg-red-500/20 text-red-400'
+                          }`}>
                           {session.status}
                         </span>
                       </div>
@@ -205,7 +211,7 @@ const AdminPage: React.FC = () => {
             </div>
           </div>
         );
-      
+
       default:
         return null;
     }

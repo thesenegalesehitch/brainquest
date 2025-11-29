@@ -56,7 +56,7 @@ export class SecurityUtils {
 }
 
 export class SecureStorage {
-  static setItem(key: string, value: any, encrypt: boolean = true): void {
+  static setItem(key: string, value: unknown, encrypt: boolean = true): void {
     try {
       const data = JSON.stringify(value);
       const storedData = encrypt ? SecurityUtils.encrypt(data) : data;
@@ -102,11 +102,11 @@ export class SessionManager {
     SecureStorage.setItem(this.SESSION_KEY, session);
   }
 
-  static getSession(): any {
+  static getSession(): { userId: string; token: string; createdAt: number; expiresAt: number } | null {
     const session = SecureStorage.getItem(this.SESSION_KEY);
     if (!session) return null;
 
-    if (Date.now() > (session as any).expiresAt) {
+    if (Date.now() > session.expiresAt) {
       this.clearSession();
       return null;
     }

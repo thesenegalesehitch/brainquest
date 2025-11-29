@@ -2,7 +2,7 @@
 import React from 'react';
 import { Users, Trophy, Brain, BarChart3, Settings, LogOut, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/hooks/useAuth';
 
 interface AdminLayoutProps {
   children: React.ReactNode;
@@ -35,7 +35,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, activeTab, onTabCha
                 <p className="text-sm text-muted-foreground">CogniQuest++ Administration</p>
               </div>
             </div>
-            
+
             <div className="flex items-center space-x-4">
               <span className="text-sm">Connecté en tant que: <strong>{user?.username}</strong></span>
               <Button variant="ghost" onClick={signOut} className="text-red-400 hover:text-red-300">
@@ -58,11 +58,10 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, activeTab, onTabCha
                   <li key={tab.id}>
                     <button
                       onClick={() => onTabChange(tab.id)}
-                      className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${
-                        activeTab === tab.id
+                      className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${activeTab === tab.id
                           ? 'bg-cosmic-500/20 text-cosmic-400 border border-cosmic-500/30'
                           : 'hover:bg-cosmic-500/10 text-muted-foreground hover:text-white'
-                      }`}
+                        }`}
                     >
                       <Icon className="h-5 w-5" />
                       <span>{tab.label}</span>

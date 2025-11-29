@@ -1,6 +1,6 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { useAuth } from './AuthContext';
+import { useAuth } from '@/hooks/useAuth';
 import { SecureStorage } from '@/utils/security';
 import { supabase } from '@/utils/supabase';
 
@@ -26,7 +26,7 @@ interface UserStats {
   lastPlayDate?: string;
 }
 
-interface ProgressContextType {
+export interface ProgressContextType {
   userStats: UserStats;
   categoryProgress: Record<string, CategoryProgress>;
   updateProgress: (categoryId: string, level: number, score: number, timeSpent: number) => void;
@@ -35,15 +35,7 @@ interface ProgressContextType {
   isLoading: boolean;
 }
 
-const ProgressContext = createContext<ProgressContextType | null>(null);
-
-export const useProgress = () => {
-  const context = useContext(ProgressContext);
-  if (!context) {
-    throw new Error('useProgress must be used within a ProgressProvider');
-  }
-  return context;
-};
+export const ProgressContext = createContext<ProgressContextType | null>(null);
 
 const defaultUserStats: UserStats = {
   totalXP: 0,
@@ -102,6 +94,16 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         return;
       }
 
+      // Load user achievements count
+      const { count: achievementsCount, error: achievementsError } = await supabase
+        .from('user_achievements')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id);
+
+      if (achievementsError) {
+        console.error('Error loading achievements:', achievementsError);
+      }
+
       // Convert database format to app format
       const categoryProgressMap: Record<string, CategoryProgress> = {};
       progressData.forEach(item => {
@@ -135,7 +137,7 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         puzzlesSolved: totalPuzzlesSolved,
         averageScore: Math.floor(averageScore),
         timeSpent: progressData.reduce((sum, item) => sum + item.total_time, 0),
-        achievements: 0, // TODO: Calculate from achievements table
+        achievements: achievementsCount || 0,
         weeklyProgress: totalPuzzlesSolved,
         lastPlayDate: progressData.length > 0 ?
           progressData.sort((a, b) => new Date(b.last_played).getTime() - new Date(a.last_played).getTime())[0].last_played :
@@ -233,7 +235,7 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const updateProgress = (categoryId: string, level: number, score: number, timeSpent: number) => {
     const xpGained = calculateXP(score, level, timeSpent < 60 ? 1.5 : 1.0);
     const today = new Date().toDateString();
-    
+
     // Update user stats
     setUserStats(prev => {
       const newTotalXP = prev.totalXP + xpGained;
@@ -241,7 +243,7 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       const newPuzzlesSolved = prev.puzzlesSolved + 1;
       const newTimeSpent = prev.timeSpent + timeSpent;
       const newAverageScore = Math.floor(((prev.averageScore * prev.puzzlesSolved) + score) / newPuzzlesSolved);
-      
+
       const isConsecutiveDay = prev.lastPlayDate === new Date(Date.now() - 86400000).toDateString();
       const newStreak = prev.lastPlayDate === today ? prev.streak : isConsecutiveDay ? prev.streak + 1 : 1;
 
@@ -264,7 +266,7 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       const newPuzzlesCompleted = category.puzzlesCompleted + 1;
       const newProgress = Math.min(100, (newPuzzlesCompleted / 100) * 100);
       const canLevelUp = score >= 90 && newProgress >= 100;
-      
+
       const updatedCategories = {
         ...prev,
         [categoryId]: {

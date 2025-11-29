@@ -1,4 +1,5 @@
 import React, { useEffect, useState, createContext, useContext } from 'react';
+import { useLocation } from 'react-router-dom';
 import { toast } from '@/components/ui/sonner';
 import { ServerValidation } from '@/utils/serverValidation';
 import { SessionManager } from '@/utils/security';
@@ -8,7 +9,7 @@ interface AntiCheatContextType {
   isSecure: boolean;
 }
 
-const AntiCheatContext = createContext<AntiCheatContextType>({
+export const AntiCheatContext = createContext<AntiCheatContextType>({
   violations: 0,
   isSecure: true
 });
@@ -23,12 +24,19 @@ const AntiCheatProvider: React.FC<AntiCheatProviderProps> = ({ children }) => {
   const [lastActivity, setLastActivity] = useState(Date.now());
   const [sessionValidated, setSessionValidated] = useState(false);
 
+  const location = useLocation();
+
   useEffect(() => {
+    // Only active on game routes
+    if (!location.pathname.startsWith('/game/')) {
+      return;
+    }
+
     // Validate session integrity on mount
     const validateSession = () => {
       const session = SessionManager.getSession();
       if (session) {
-        const isValid = ServerValidation.validateSessionIntegrity(session.sessionId, session.userId);
+        const isValid = ServerValidation.validateSessionIntegrity(session.token, session.userId);
         if (!isValid) {
           addViolation('Session compromise détectée');
         }
@@ -67,10 +75,10 @@ const AntiCheatProvider: React.FC<AntiCheatProviderProps> = ({ children }) => {
     const handleMouseMove = (e: MouseEvent) => {
       const now = Date.now();
       mouseEvents.push({ x: e.clientX, y: e.clientY, time: now });
-      
+
       // Keep only recent events
       mouseEvents = mouseEvents.filter(event => now - event.time < 1000);
-      
+
       // Detect inhuman patterns (too precise/fast)
       if (mouseEvents.length > 10) {
         const speeds = mouseEvents.slice(1).map((event, i) => {
@@ -79,13 +87,13 @@ const AntiCheatProvider: React.FC<AntiCheatProviderProps> = ({ children }) => {
           const timeDiff = event.time - prev.time;
           return distance / timeDiff;
         });
-        
+
         const avgSpeed = speeds.reduce((a, b) => a + b, 0) / speeds.length;
         if (avgSpeed > 5) { // Threshold for suspicious speed
           addViolation('Mouvement de souris suspect');
         }
       }
-      
+
       setLastActivity(now);
     };
 
@@ -158,28 +166,28 @@ const AntiCheatProvider: React.FC<AntiCheatProviderProps> = ({ children }) => {
       clearInterval(inactivityInterval);
       clearInterval(sessionValidationInterval);
     };
-  }, [lastActivity]);
+  }, [lastActivity, location.pathname]);
 
   const addViolation = (reason: string) => {
     setViolations(prev => {
       const newCount = prev + 1;
-      
+
       toast.warning(`⚠️ ${reason}`, {
         description: `Violation ${newCount}/5`
       });
-      
+
       if (newCount >= 5) {
         setIsSecure(false);
         toast.error('Session terminée pour activité suspecte', {
           description: 'Trop de violations de sécurité détectées'
         });
-        
+
         // Redirect after delay
         setTimeout(() => {
           window.location.href = '/';
         }, 3000);
       }
-      
+
       return newCount;
     });
   };
@@ -200,7 +208,5 @@ const AntiCheatProvider: React.FC<AntiCheatProviderProps> = ({ children }) => {
     </AntiCheatContext.Provider>
   );
 };
-
-export const useAntiCheat = () => useContext(AntiCheatContext);
 
 export default AntiCheatProvider;

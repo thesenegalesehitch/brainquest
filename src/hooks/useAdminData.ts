@@ -22,9 +22,9 @@ export const useAdminData = () => {
 
   const loadAdminData = () => {
     setIsLoading(true);
-    
+
     // Charger les utilisateurs depuis secure storage
-    const storedUsers = SecureStorage.getItem<any[]>('cogniquest_users') || [];
+    const storedUsers = SecureStorage.getItem<User[]>('cogniquest_users') || [];
     const usersWithStats = storedUsers.map((user: User) => ({
       ...user,
       level: Math.floor(Math.random() * 20) + 1,
@@ -141,7 +141,7 @@ export const useAdminData = () => {
     const updatedUsers = users.filter(user => user.id !== id);
     setUsers(updatedUsers);
     SecureStorage.setItem('cogniquest_users', updatedUsers);
-    
+
     // Supprimer aussi les progrès associés
     setUserProgress(prev => prev.filter(p => p.userId !== id));
     setSessions(prev => prev.filter(s => s.userId !== id));
@@ -182,9 +182,9 @@ export const useAdminData = () => {
 
   // CRUD Operations for User Progress
   const updateUserProgress = (userId: string, categoryId: string, progressData: Partial<UserProgress>) => {
-    const updatedProgress = userProgress.map(progress => 
-      progress.userId === userId && progress.categoryId === categoryId 
-        ? { ...progress, ...progressData } 
+    const updatedProgress = userProgress.map(progress =>
+      progress.userId === userId && progress.categoryId === categoryId
+        ? { ...progress, ...progressData }
         : progress
     );
     setUserProgress(updatedProgress);
@@ -207,23 +207,23 @@ export const useAdminData = () => {
     puzzles: Object.values(puzzles).flat(),
     categories,
     isLoading,
-    
+
     // Actions
     loadAdminData,
-    
+
     // User CRUD
     createUser,
     updateUser,
     deleteUser,
-    
+
     // Achievement CRUD
     createAchievement,
     updateAchievement,
     deleteAchievement,
-    
+
     // Session CRUD
     deleteSession,
-    
+
     // Progress CRUD
     updateUserProgress,
     deleteUserProgress

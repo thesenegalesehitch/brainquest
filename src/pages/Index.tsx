@@ -8,8 +8,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Play, BarChart3, Trophy, BookOpen, LogIn } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
-import { useProgress } from '@/contexts/ProgressContext';
+import { useAuth } from '@/hooks/useAuth';
+import { useProgress } from '@/hooks/useProgress';
 import AuthModal from '@/components/auth/AuthModal';
 
 const Index = () => {
@@ -27,7 +27,7 @@ const Index = () => {
 
     const progress = categoryProgress[categoryId];
     const startLevel = Math.max(1, progress.level);
-    
+
     console.log(`Starting category: ${categoryId} at level ${startLevel}`);
     navigate(`/game/${categoryId}/${startLevel}`);
   };
@@ -37,7 +37,7 @@ const Index = () => {
       <>
         <div className="min-h-screen stellar-bg">
           <Header />
-          
+
           <main className="container mx-auto px-4 py-8">
             <div className="text-center mb-8">
               <h1 className="text-4xl md:text-6xl font-bold mb-4">
@@ -46,17 +46,17 @@ const Index = () => {
                 </span>
               </h1>
               <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-8">
-                Entraînez votre cerveau avec des défis scientifiquement conçus. 
+                Entraînez votre cerveau avec des défis scientifiquement conçus.
                 Explorez 10 catégories cognitives avec plus de 100 puzzles par niveau.
               </p>
-              
+
               <div className="card-cosmic max-w-lg mx-auto p-8">
                 <h2 className="text-2xl font-bold mb-4 text-cosmic-400">Commencez votre aventure</h2>
                 <p className="text-muted-foreground mb-6">
-                  Créez un compte pour sauvegarder votre progression, débloquer des achievements 
+                  Créez un compte pour sauvegarder votre progression, débloquer des achievements
                   et accéder à tous les niveaux de CogniQuest++.
                 </p>
-                <Button 
+                <Button
                   onClick={() => setShowAuthModal(true)}
                   className="w-full bg-gradient-to-r from-cosmic-500 to-stellar-500 hover:from-cosmic-600 hover:to-stellar-600"
                 >
@@ -86,9 +86,9 @@ const Index = () => {
           </main>
         </div>
 
-        <AuthModal 
-          isOpen={showAuthModal} 
-          onClose={() => setShowAuthModal(false)} 
+        <AuthModal
+          isOpen={showAuthModal}
+          onClose={() => setShowAuthModal(false)}
         />
       </>
     );
@@ -97,7 +97,7 @@ const Index = () => {
   return (
     <div className="min-h-screen stellar-bg">
       <Header />
-      
+
       <main className="container mx-auto px-4 py-8">
         <div className="text-center mb-8">
           <h1 className="text-4xl md:text-6xl font-bold mb-4">
@@ -140,11 +140,11 @@ const Index = () => {
                 Catégories d'Entraînement
               </h2>
               <p className="text-muted-foreground">
-                Chaque catégorie contient 3 niveaux avec 100+ puzzles. 
+                Chaque catégorie contient 3 niveaux avec 100+ puzzles.
                 Obtenez 90%+ pour débloquer le niveau suivant.
               </p>
             </div>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {categories.map((category) => {
                 const progress = categoryProgress[category.id];
@@ -175,14 +175,14 @@ const Index = () => {
               <p className="text-muted-foreground mb-8">
                 Collectionnez des trophées en progressant dans vos entraînements cognitifs
               </p>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 <div className="card-cosmic">
                   <Trophy className="h-12 w-12 text-yellow-400 mx-auto mb-4" />
                   <h3 className="text-lg font-semibold mb-2">Premier Pas</h3>
                   <p className="text-sm text-muted-foreground">Complétez votre premier puzzle</p>
                   <div className="w-full bg-dark-200 rounded-full h-2 mt-4">
-                    <div className="bg-yellow-400 h-2 rounded-full" style={{width: userStats.puzzlesSolved > 0 ? '100%' : '0%'}}></div>
+                    <div className="bg-yellow-400 h-2 rounded-full" style={{ width: userStats.puzzlesSolved > 0 ? '100%' : '0%' }}></div>
                   </div>
                 </div>
 
@@ -191,7 +191,7 @@ const Index = () => {
                   <h3 className="text-lg font-semibold mb-2">Marathonien</h3>
                   <p className="text-sm text-muted-foreground">Maintenez un streak de 7 jours</p>
                   <div className="w-full bg-dark-200 rounded-full h-2 mt-4">
-                    <div className="bg-stellar-400 h-2 rounded-full" style={{width: `${Math.min(100, (userStats.streak / 7) * 100)}%`}}></div>
+                    <div className="bg-stellar-400 h-2 rounded-full" style={{ width: `${Math.min(100, (userStats.streak / 7) * 100)}%` }}></div>
                   </div>
                 </div>
 
@@ -200,7 +200,7 @@ const Index = () => {
                   <h3 className="text-lg font-semibold mb-2">Expert</h3>
                   <p className="text-sm text-muted-foreground">Atteignez 90% de moyenne</p>
                   <div className="w-full bg-dark-200 rounded-full h-2 mt-4">
-                    <div className="bg-cosmic-400 h-2 rounded-full" style={{width: `${Math.min(100, (userStats.averageScore / 90) * 100)}%`}}></div>
+                    <div className="bg-cosmic-400 h-2 rounded-full" style={{ width: `${Math.min(100, (userStats.averageScore / 90) * 100)}%` }}></div>
                   </div>
                 </div>
               </div>
@@ -215,7 +215,7 @@ const Index = () => {
               <p className="text-muted-foreground mb-8">
                 Découvrez la science derrière chaque exercice cognitif
               </p>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {categories.slice(0, 4).map((category) => (
                   <div key={category.id} className="card-cosmic text-left">

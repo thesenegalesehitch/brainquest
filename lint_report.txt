@@ -1,0 +1,67 @@
+
+> vite_react_shadcn_ts@0.0.0 lint
+> eslint .
+
+
+/Users/pro/projet react/Braintraining/src/components/security/AntiCheatProvider.tsx
+  204:14  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+/Users/pro/projet react/Braintraining/src/components/ui/badge.tsx
+  37:17  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+/Users/pro/projet react/Braintraining/src/components/ui/button.tsx
+  56:18  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+/Users/pro/projet react/Braintraining/src/components/ui/form.tsx
+  168:3  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+/Users/pro/projet react/Braintraining/src/components/ui/navigation-menu.tsx
+  119:3  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+/Users/pro/projet react/Braintraining/src/components/ui/sidebar.tsx
+  760:3  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+/Users/pro/projet react/Braintraining/src/components/ui/sonner.tsx
+  29:19  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+/Users/pro/projet react/Braintraining/src/components/ui/toggle.tsx
+  43:18  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+/Users/pro/projet react/Braintraining/src/contexts/AuthContext.tsx
+  27:14  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+/Users/pro/projet react/Braintraining/src/contexts/ProgressContext.tsx
+  40:14  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+/Users/pro/projet react/Braintraining/src/hooks/useAdminData.ts
+  27:47  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/pro/projet react/Braintraining/src/hooks/useAnalytics.ts
+  39:6  warning  React Hook useEffect has a missing dependency: 'trackError'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+/Users/pro/projet react/Braintraining/src/hooks/usePerformanceMonitor.ts
+  47:33  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/pro/projet react/Braintraining/src/utils/security.ts
+   59:38  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  105:24  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  109:34  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/pro/projet react/Braintraining/src/utils/serverValidation.ts
+    8:11  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  109:46  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  115:46  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/pro/projet react/Braintraining/src/utils/serviceWorker.ts
+  109:23  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  120:14  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/pro/projet react/Braintraining/src/utils/supabase.ts
+  4:37  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  5:41  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/pro/projet react/Braintraining/tailwind.config.ts
+  181:12  error  A `require()` style import is forbidden  @typescript-eslint/no-require-imports
+
+✖ 24 problems (13 errors, 11 warnings)
+

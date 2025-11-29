@@ -5,7 +5,7 @@ interface PuzzleAttempt {
   userId: string;
   categoryId: string;
   level: number;
-  answer: any;
+  answer: unknown;
   timeSpent: number;
   timestamp: number;
 }
@@ -106,13 +106,13 @@ export class ServerValidation {
     return violations;
   }
 
-  static generatePuzzleSignature(puzzleData: any): string {
+  static generatePuzzleSignature(puzzleData: unknown): string {
     // Create a signature for puzzle integrity
     const dataString = JSON.stringify(puzzleData);
     return SecurityUtils.hashPassword(dataString);
   }
 
-  static validatePuzzleSignature(puzzleData: any, signature: string): boolean {
+  static validatePuzzleSignature(puzzleData: unknown, signature: string): boolean {
     const currentSignature = this.generatePuzzleSignature(puzzleData);
     return currentSignature === signature;
   }

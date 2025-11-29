@@ -1,4 +1,19 @@
 // Service Worker registration and management
+interface BeforeInstallPromptEvent extends Event {
+  readonly platforms: string[];
+  readonly userChoice: Promise<{
+    outcome: 'accepted' | 'dismissed';
+    platform: string;
+  }>;
+  prompt(): Promise<void>;
+}
+
+declare global {
+  interface Window {
+    installPWA?: () => Promise<void>;
+  }
+}
+
 export class ServiceWorkerManager {
   private static registration: ServiceWorkerRegistration | null = null;
 
@@ -106,7 +121,7 @@ if (typeof window !== 'undefined') {
   });
 
   // Handle PWA install prompt
-  let deferredPrompt: any;
+  let deferredPrompt: BeforeInstallPromptEvent | null;
 
   window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault();
@@ -117,7 +132,7 @@ if (typeof window !== 'undefined') {
   });
 
   // Function to trigger install
-  (window as any).installPWA = async () => {
+  window.installPWA = async () => {
     if (deferredPrompt) {
       deferredPrompt.prompt();
       const { outcome } = await deferredPrompt.userChoice;

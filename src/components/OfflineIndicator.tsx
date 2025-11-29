@@ -1,8 +1,8 @@
 
 import React from 'react';
 import { WifiOff, Wifi, Cloud, CloudOff } from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
-import { useProgress } from '@/contexts/ProgressContext';
+import { useAuth } from '@/hooks/useAuth';
+import { useProgress } from '@/hooks/useProgress';
 import { Button } from '@/components/ui/button';
 
 const OfflineIndicator: React.FC = () => {

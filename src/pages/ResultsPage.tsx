@@ -4,12 +4,12 @@ import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { 
-  Home, 
-  RotateCcw, 
-  ArrowRight, 
-  Trophy, 
-  Clock, 
+import {
+  Home,
+  RotateCcw,
+  ArrowRight,
+  Trophy,
+  Clock,
   Target,
   Brain,
   Star,
@@ -17,7 +17,7 @@ import {
   Award
 } from 'lucide-react';
 import { categories } from '@/data/categories';
-import { useProgress } from '@/contexts/ProgressContext';
+import { useProgress } from '@/hooks/useProgress';
 import { useToast } from '@/hooks/use-toast';
 
 interface SessionResult {
@@ -42,9 +42,9 @@ const ResultsPage = () => {
   const navigate = useNavigate();
   const { categoryProgress } = useProgress();
   const { toast } = useToast();
-  
+
   const state = location.state as LocationState;
-  
+
   useEffect(() => {
     if (!state) {
       navigate('/');
@@ -59,11 +59,11 @@ const ResultsPage = () => {
   const { score, correctAnswers, totalQuestions, totalTime, sessionResults } = state;
   const currentCategory = categories.find(cat => cat.id === categoryId);
   const categoryData = categoryProgress[categoryId];
-  
+
   // Calculate performance metrics
   const averageResponseTime = sessionResults.reduce((acc, result) => acc + result.responseTime, 0) / sessionResults.length;
   const difficulty = sessionResults.reduce((acc, result) => acc + result.puzzle.difficulty, 0) / sessionResults.length;
-  
+
   // Performance rating
   const getPerformanceRating = (score: number) => {
     if (score >= 95) return { rating: 'Parfait', color: 'text-yellow-400', stars: 5 };
@@ -149,9 +149,9 @@ const ResultsPage = () => {
               </p>
               <div className="flex justify-center space-x-1 mt-2">
                 {[...Array(5)].map((_, i) => (
-                  <Star 
-                    key={i} 
-                    className={`h-5 w-5 ${i < performance.stars ? 'text-yellow-400 fill-current' : 'text-gray-600'}`} 
+                  <Star
+                    key={i}
+                    className={`h-5 w-5 ${i < performance.stars ? 'text-yellow-400 fill-current' : 'text-gray-600'}`}
                   />
                 ))}
               </div>
@@ -213,11 +213,10 @@ const ResultsPage = () => {
                   <Button
                     onClick={handleNextLevel}
                     disabled={!canAdvance}
-                    className={`${
-                      canAdvance 
-                        ? 'bg-gradient-to-r from-cosmic-500 to-stellar-500 hover:from-cosmic-600 hover:to-stellar-600' 
+                    className={`${canAdvance
+                        ? 'bg-gradient-to-r from-cosmic-500 to-stellar-500 hover:from-cosmic-600 hover:to-stellar-600'
                         : 'opacity-50 cursor-not-allowed'
-                    }`}
+                      }`}
                   >
                     <ArrowRight className="h-4 w-4 mr-2" />
                     Niveau suivant
@@ -308,11 +307,11 @@ const ResultsPage = () => {
             <CardContent>
               <div className="text-center">
                 <p className="text-muted-foreground mb-4">
-                  {score >= 90 
+                  {score >= 90
                     ? "Excellent travail ! Votre cerveau a démontré une neuroplasticité remarquable. Selon les études de Merzenich, ce type d'entraînement cognitif renforce les connexions synaptiques."
                     : score >= 75
-                    ? "Bonne performance ! L'entraînement régulier améliore les fonctions exécutives selon les recherches de Diamond (2013). Continuez pour optimiser vos capacités cognitives."
-                    : "Ne vous découragez pas ! La théorie de la zone proximale de développement de Vygotsky montre que la difficulté optimale mène à l'amélioration. Persévérez !"
+                      ? "Bonne performance ! L'entraînement régulier améliore les fonctions exécutives selon les recherches de Diamond (2013). Continuez pour optimiser vos capacités cognitives."
+                      : "Ne vous découragez pas ! La théorie de la zone proximale de développement de Vygotsky montre que la difficulté optimale mène à l'amélioration. Persévérez !"
                   }
                 </p>
                 <div className="inline-block px-4 py-2 bg-cosmic-500/20 rounded-lg">

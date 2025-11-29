@@ -19,25 +19,6 @@ interface UserProperties {
 }
 
 export const useAnalytics = () => {
-  // Global error handler
-  useEffect(() => {
-    const handleError = (event: ErrorEvent) => {
-      trackError(new Error(event.message), 'global_error_handler');
-    };
-
-    const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
-      trackError(new Error(event.reason), 'unhandled_promise_rejection');
-    };
-
-    window.addEventListener('error', handleError);
-    window.addEventListener('unhandledrejection', handleUnhandledRejection);
-
-    return () => {
-      window.removeEventListener('error', handleError);
-      window.removeEventListener('unhandledrejection', handleUnhandledRejection);
-    };
-  }, []);
-
   const trackEvent = useCallback((eventData: AnalyticsEvent) => {
     // In development, log to console
     if (process.env.NODE_ENV === 'development') {
@@ -74,6 +55,45 @@ export const useAnalytics = () => {
       console.error('Analytics tracking failed:', error);
     }
   }, []);
+
+  const trackError = useCallback((error: Error, context?: string) => {
+    // Log to our logger first
+    logger.error('Analytics Error', error, { context });
+
+    trackEvent({
+      event: 'error',
+      category: 'error',
+      action: 'error_occurred',
+      label: error.name,
+      customData: {
+        message: error.message,
+        stack: error.stack,
+        context,
+        timestamp: Date.now(),
+        userAgent: navigator.userAgent,
+        url: window.location.href
+      }
+    });
+  }, [trackEvent]);
+  useEffect(() => {
+    const handleError = (event: ErrorEvent) => {
+      trackError(new Error(event.message), 'global_error_handler');
+    };
+
+    const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
+      trackError(new Error(event.reason), 'unhandled_promise_rejection');
+    };
+
+    window.addEventListener('error', handleError);
+    window.addEventListener('unhandledrejection', handleUnhandledRejection);
+
+    return () => {
+      window.removeEventListener('error', handleError);
+      window.removeEventListener('unhandledrejection', handleUnhandledRejection);
+    };
+  }, [trackError]);
+
+
 
   const trackPuzzleStart = useCallback((puzzleId: string, categoryId: string, level: number) => {
     trackEvent({
@@ -166,25 +186,7 @@ export const useAnalytics = () => {
     });
   }, [trackEvent]);
 
-  const trackError = useCallback((error: Error, context?: string) => {
-    // Log to our logger first
-    logger.error('Analytics Error', error, { context });
 
-    trackEvent({
-      event: 'error',
-      category: 'error',
-      action: 'error_occurred',
-      label: error.name,
-      customData: {
-        message: error.message,
-        stack: error.stack,
-        context,
-        timestamp: Date.now(),
-        userAgent: navigator.userAgent,
-        url: window.location.href
-      }
-    });
-  }, [trackEvent]);
 
   const setUserProperties = useCallback((properties: UserProperties) => {
     // Set user properties for future events

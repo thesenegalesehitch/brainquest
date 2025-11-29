@@ -44,7 +44,7 @@ export const usePerformanceMonitor = () => {
     const observeFID = () => {
       const observer = new PerformanceObserver((list) => {
         const entries = list.getEntries();
-        entries.forEach((entry: any) => {
+        entries.forEach((entry: PerformanceEventTiming) => {
           metricsRef.current.fid = entry.processingStart - entry.startTime;
           console.log('FID:', entry.processingStart - entry.startTime);
         });

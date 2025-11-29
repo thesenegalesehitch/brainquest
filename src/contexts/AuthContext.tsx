@@ -13,7 +13,7 @@ interface User {
   createdAt: string;
 }
 
-interface AuthContextType {
+export interface AuthContextType {
   user: User | null;
   isLoading: boolean;
   isOnline: boolean;
@@ -22,15 +22,7 @@ interface AuthContextType {
   signOut: () => void;
 }
 
-const AuthContext = createContext<AuthContextType | null>(null);
-
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
-};
+export const AuthContext = createContext<AuthContextType | null>(null);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
@@ -131,7 +123,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         description: "Synchronisation des données en cours...",
       });
     };
-    
+
     const handleOffline = () => {
       setIsOnline(false);
       toast({
@@ -217,6 +209,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       if (data.user) {
+        await loadUserProfile(data.user);
         toast({
           title: "Inscription réussie",
           description: `Bienvenue ${username} ! Vérifiez votre email pour confirmer votre compte.`,
@@ -281,6 +274,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (data.user) {
         // User profile will be loaded by the auth state change listener
+        // But we also load it manually here to support Mock Mode where events don't fire
+        await loadUserProfile(data.user);
         toast({
           title: "Connexion réussie",
           description: `Bon retour !`,
