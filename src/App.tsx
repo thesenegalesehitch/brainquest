@@ -1,5 +1,23 @@
 import React from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import ErrorBoundary from "@/components/ErrorBoundary";
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000,
+      gcTime: 10 * 60 * 1000,
+      retry: (failureCount, error) => {
+        if (error && typeof error === 'object' && 'status' in error &&
+          typeof error.status === 'number' && error.status >= 400 && error.status < 500) {
+          return false;
+        }
+        return failureCount < 3;
+      },
+    },
+  },
+});
 
 const TestPage = () => (
   <div style={{
@@ -14,7 +32,7 @@ const TestPage = () => (
   }}>
     <div style={{ textAlign: 'center', maxWidth: '600px' }}>
       <h1 style={{ fontSize: '3rem', marginBottom: '1rem' }}>🧠 CogniQuest++</h1>
-      <p style={{ fontSize: '1.5rem', marginBottom: '2rem' }}>Application Successfully Loaded!</p>
+      <p style={{ fontSize: '1.5rem', marginBottom: '2rem' }}>Step 2: QueryClient + ErrorBoundary</p>
       <div style={{
         background: 'rgba(34, 211, 238, 0.1)',
         border: '1px solid rgba(34, 211, 238, 0.3)',
@@ -25,23 +43,25 @@ const TestPage = () => (
         <p style={{ fontSize: '1rem', opacity: 0.9 }}>
           ✅ React is working<br />
           ✅ Router is working<br />
-          ✅ Build is successful
+          ✅ QueryClient is working<br />
+          ✅ ErrorBoundary is working
         </p>
       </div>
-      <p style={{ fontSize: '0.9rem', marginTop: '2rem', opacity: 0.6 }}>
-        If you see this, the basic infrastructure is working correctly.
-      </p>
     </div>
   </div>
 );
 
 const App = () => {
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="*" element={<TestPage />} />
-      </Routes>
-    </BrowserRouter>
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <BrowserRouter>
+          <Routes>
+            <Route path="*" element={<TestPage />} />
+          </Routes>
+        </BrowserRouter>
+      </QueryClientProvider>
+    </ErrorBoundary>
   );
 };
 
