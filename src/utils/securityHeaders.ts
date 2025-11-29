@@ -19,11 +19,11 @@ export class SecurityHeaders {
   }
 
   static applySecurityHeaders(): void {
-    // Set CSP header
-    const meta = document.createElement('meta');
-    meta.httpEquiv = 'Content-Security-Policy';
-    meta.content = this.getCSP();
-    document.head.appendChild(meta);
+    // Set CSP header - DISABLED for now as it causes issues in production
+    // const meta = document.createElement('meta');
+    // meta.httpEquiv = 'Content-Security-Policy';
+    // meta.content = this.getCSP();
+    // document.head.appendChild(meta);
 
     // Set other security headers via meta tags
     const securityHeaders = [
